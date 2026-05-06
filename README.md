@@ -122,3 +122,9 @@ All data is stored exclusively in your browser's **localStorage** — nothing is
 | Firefox | ✅ Full support |
 | Safari | ✅ Full support |
 | Mobile browsers | ✅ Responsive layout |
+
+
+## Keyboard Support
+- Spacebar — Start / Pause / Resume the timer
+- R — Reset the Timer
+- Enter (when focused in the Reps field) — logs the set and releases focus to you can press spacebar again to start your next rep
