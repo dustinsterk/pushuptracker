@@ -3,6 +3,8 @@
 A fully self-contained, offline-capable pushup tracking web application built as a single HTML file. No installation, no accounts, no internet required — just open the file in any modern browser and start tracking.
 
 ![Workout Main Screen](Workout.png)
+![History Screen](History.png)
+![Reminders Screen](Reminders.png)
 
 ---
 
