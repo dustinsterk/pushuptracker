@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PUSHUP — Daily Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Share+Tech+Mono&family=Barlow:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f; --surface: #12121a; --surface2: #1a1a26; --border: #2a2a40;
+    --accent: #ff4d00; --accent2: #ffb700; --green: #00e676;
+    --text: #e8e8f0; --muted: #6b6b90;
+    --glow: 0 0 20px rgba(255,77,0,0.4); --glow2: 0 0 20px rgba(0,230,118,0.3);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Barlow', sans-serif; min-height: 100vh; overflow-x: hidden; }
+  body::before { content: ''; position: fixed; inset: 0; background: radial-gradient(ellipse 60% 40% at 10% 0%, rgba(255,77,0,0.08) 0%, transparent 60%), radial-gradient(ellipse 50% 40% at 90% 100%, rgba(255,183,0,0.06) 0%, transparent 60%); pointer-events: none; z-index: 0; }
+  .app { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 20px; }
+  header { display: flex; align-items: center; justify-content: space-between; padding: 24px 0 32px; border-bottom: 1px solid var(--border); margin-bottom: 32px; }
+  .logo { font-family: 'Black Ops One', cursive; font-size: clamp(2rem, 6vw, 3.5rem); letter-spacing: 0.1em; color: var(--accent); text-shadow: var(--glow); line-height: 1; }
+  .logo span { color: var(--text); }
+  .header-stats { text-align: right; }
+  .header-stats .today-total { font-family: 'Share Tech Mono', monospace; font-size: clamp(2rem, 5vw, 3rem); color: var(--green); text-shadow: var(--glow2); line-height: 1; }
+  .header-stats .label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.15em; }
+  .tabs { display: flex; gap: 4px; background: var(--surface); border-radius: 12px; padding: 4px; margin-bottom: 28px; border: 1px solid var(--border); }
+  .tab { flex: 1; padding: 10px; background: none; border: none; color: var(--muted); font-family: 'Barlow', sans-serif; font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; border-radius: 8px; transition: all 0.2s; }
+  .tab.active { background: var(--accent); color: white; }
+  .tab:hover:not(.active) { color: var(--text); background: var(--surface2); }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; position: relative; overflow: hidden; }
+  .card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--accent), transparent); }
+  .card-title { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.2em; color: var(--muted); margin-bottom: 16px; font-weight: 600; }
+  .num-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: 'Share Tech Mono', monospace; font-size: 1.1rem; padding: 10px 14px; outline: none; transition: border-color 0.2s; width: 100%; }
+  .num-input:focus { border-color: var(--accent); }
+  .timer-display { font-family: 'Share Tech Mono', monospace; font-size: 3rem; color: var(--accent2); text-align: center; margin: 12px 0 20px; text-shadow: 0 0 20px rgba(255,183,0,0.4); letter-spacing: 0.05em; }
+  .timer-display.running { color: var(--green); text-shadow: var(--glow2); }
+  .btn-row { display: flex; gap: 10px; }
+  .btn { flex: 1; padding: 12px 16px; border-radius: 10px; border: none; font-family: 'Barlow', sans-serif; font-weight: 700; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; transition: all 0.2s; }
+  .btn-primary { background: var(--accent); color: white; box-shadow: 0 4px 15px rgba(255,77,0,0.3); }
+  .btn-primary:hover { background: #ff6622; transform: translateY(-1px); }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--muted); background: var(--border); }
+  .btn-success { background: var(--green); color: #0a0a0f; font-weight: 800; box-shadow: 0 4px 15px rgba(0,230,118,0.3); }
+  .btn-success:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,230,118,0.5); }
+  .log-set-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 24px; position: relative; overflow: hidden; }
+  .log-set-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--green), transparent); }
+  .set-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  @media (max-width: 500px) { .set-inputs { grid-template-columns: 1fr 1fr; } }
+  .field-group { display: flex; flex-direction: column; gap: 6px; }
+  .field-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em; font-weight: 600; }
+  .sets-list { margin-top: 24px; }
+  .sets-list-title { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.2em; color: var(--muted); margin-bottom: 12px; font-weight: 600; }
+  .set-row { display: grid; grid-template-columns: auto 1fr 1fr 1fr auto; gap: 12px; align-items: center; padding: 12px 16px; background: var(--surface2); border-radius: 8px; margin-bottom: 6px; animation: slideIn 0.3s ease; }
+  @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+  .set-num { font-family: 'Share Tech Mono', monospace; font-size: 0.75rem; color: var(--accent); font-weight: 700; background: rgba(255,77,0,0.1); padding: 3px 8px; border-radius: 4px; }
+  .set-val { font-family: 'Share Tech Mono', monospace; font-size: 0.9rem; color: var(--text); text-align: center; }
+  .set-val small { display: block; font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+  .del-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1rem; padding: 4px; border-radius: 4px; transition: color 0.2s; }
+  .del-btn:hover { color: #ff4444; }
+  .week-bar-chart { display: flex; align-items: flex-end; gap: 8px; height: 120px; padding: 0 4px; margin: 20px 0 8px; }
+  .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+  .bar { width: 100%; background: linear-gradient(to top, var(--accent), var(--accent2)); border-radius: 4px 4px 0 0; transition: height 0.5s cubic-bezier(0.34,1.56,0.64,1); min-height: 0; }
+  .bar.today { background: linear-gradient(to top, var(--green), #00ffaa); box-shadow: 0 0 15px rgba(0,230,118,0.4); }
+  .bar-label { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+  .bar-count { font-family: 'Share Tech Mono', monospace; font-size: 0.7rem; color: var(--text); }
+  .history-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+  .history-table th { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--muted); font-weight: 600; padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+  .history-table td { padding: 12px; font-family: 'Share Tech Mono', monospace; font-size: 0.85rem; border-bottom: 1px solid var(--border); color: var(--text); }
+  .history-table tr:hover td { background: var(--surface2); }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; }
+  .badge-orange { background: rgba(255,77,0,0.15); color: var(--accent); }
+  .badge-green { background: rgba(0,230,118,0.15); color: var(--green); }
+  .reminder-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; margin-bottom: 20px; position: relative; overflow: hidden; }
+  .reminder-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--accent2), transparent); }
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+  .toggle-label { font-weight: 600; font-size: 1rem; }
+  .toggle-sub { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+  .toggle { width: 52px; height: 28px; background: var(--border); border-radius: 14px; cursor: pointer; position: relative; transition: background 0.3s; border: none; flex-shrink: 0; }
+  .toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; background: white; border-radius: 50%; transition: transform 0.3s; }
+  .toggle.on { background: var(--accent); }
+  .toggle.on::after { transform: translateX(24px); }
+  .interval-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .select-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: 'Barlow', sans-serif; font-size: 0.95rem; padding: 11px 14px; outline: none; cursor: pointer; transition: border-color 0.2s; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b6b90' fill='none' stroke-width='2'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
+  .select-input:focus { border-color: var(--accent2); }
+  .next-reminder { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 16px; display: flex; align-items: center; gap: 14px; margin-top: 4px; }
+  .next-reminder .icon { font-size: 1.8rem; }
+  .next-reminder .info { flex: 1; }
+  .next-reminder .info .time { font-family: 'Share Tech Mono', monospace; font-size: 1.2rem; color: var(--accent2); }
+  .next-reminder .info .sub { font-size: 0.75rem; color: var(--muted); }
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface); border: 1px solid var(--accent); border-radius: 14px; padding: 18px 22px; display: flex; align-items: center; gap: 14px; box-shadow: 0 8px 30px rgba(0,0,0,0.5), var(--glow); z-index: 1000; transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1); max-width: 340px; cursor: pointer; }
+  .toast.show { transform: translateX(0); }
+  .toast-icon { font-size: 1.8rem; flex-shrink: 0; }
+  .toast-text { flex: 1; }
+  .toast-text .title { font-weight: 700; font-size: 0.95rem; }
+  .toast-text .sub { font-size: 0.8rem; color: var(--muted); }
+  .toast-close { font-size: 1.1rem; color: var(--muted); flex-shrink: 0; line-height: 1; padding: 2px 4px; border-radius: 4px; transition: color 0.2s; }
+  .toast-close:hover { color: var(--text); }
+  .reminder-toast { border-color: var(--accent2); box-shadow: 0 8px 30px rgba(0,0,0,0.5), 0 0 20px rgba(255,183,0,0.4); }
+  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px; }
+  @media (max-width: 500px) { .stats-row { grid-template-columns: 1fr 1fr; } }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; text-align: center; }
+  .stat-card .val { font-family: 'Share Tech Mono', monospace; font-size: 1.8rem; color: var(--text); line-height: 1; margin-bottom: 4px; }
+  .stat-card .val.highlight { color: var(--green); }
+  .stat-card .lbl { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em; font-weight: 600; }
+  .empty { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 0.9rem; }
+  .empty .emoji { font-size: 2.5rem; margin-bottom: 8px; }
+  .clear-day-btn { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 8px; padding: 8px 14px; font-size: 0.75rem; cursor: pointer; transition: all 0.2s; font-family: 'Barlow', sans-serif; }
+  .clear-day-btn:hover { border-color: #ff4444; color: #ff4444; }
+  .chart-toggle { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); border-radius: 7px; padding: 6px 14px; font-size: 0.75rem; font-weight: 700; font-family: 'Barlow', sans-serif; text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; transition: all 0.2s; }
+  .chart-toggle:hover { border-color: var(--accent2); color: var(--text); }
+  .chart-toggle.active { background: var(--accent2); border-color: var(--accent2); color: #0a0a0f; }
+  .chart-type-btn { background: none; border: none; color: var(--muted); border-radius: 5px; padding: 4px 10px; font-size: 1rem; cursor: pointer; transition: all 0.2s; line-height: 1; }
+  .chart-type-btn:hover { color: var(--text); background: var(--border); }
+  .chart-type-btn.active { background: var(--accent); color: white; }
+  @keyframes confettiFall {
+    0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+    80%  { opacity: 1; }
+    100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div>
+      <div class="logo">PUSH<span>UP</span></div>
+      <div style="font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.15em;margin-top:4px;" id="dateDisplay"></div>
+    </div>
+    <div class="header-stats">
+      <div class="today-total" id="headerTotal">0</div>
+      <div class="label">Today's Reps</div>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('workout')">💪 Workout</button>
+    <button class="tab" onclick="switchTab('history')">📊 History</button>
+    <button class="tab" onclick="switchTab('reminder')">⏰ Reminders</button>
+  </div>
+
+  <!-- WORKOUT PANEL -->
+  <div id="panel-workout" class="panel active">
+
+    <div class="stats-row">
+      <div class="stat-card"><div class="val highlight" id="statToday">0</div><div class="lbl">Today</div></div>
+      <div class="stat-card"><div class="val" id="statSets">0</div><div class="lbl">Sets</div></div>
+      <div class="stat-card"><div class="val" id="statWeek">0</div><div class="lbl">This Week</div></div>
+    </div>
+
+    <!-- Timer only - no rep counter -->
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-title">Set Timer</div>
+      <div class="timer-display" id="timerDisplay">00:00</div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="timerBtn" onclick="toggleTimer()">▶ Start</button>
+        <button class="btn btn-secondary" onclick="resetTimer()">Reset</button>
+      </div>
+      <div style="margin-top:12px;font-size:0.75rem;color:var(--muted);text-align:center;" id="timerStatus">Ready</div>
+    </div>
+
+    <!-- Log a Set -->
+    <div class="log-set-card">
+      <div class="card-title">Log a Set</div>
+      <div class="set-inputs" style="grid-template-columns:1fr 1fr 1fr 1fr;">
+        <div class="field-group">
+          <div class="field-label">Reps</div>
+          <input class="num-input" type="number" id="logReps" min="1" max="500" placeholder="0">
+        </div>
+        <div class="field-group">
+          <div class="field-label">Set #</div>
+          <input class="num-input" type="number" id="logSetNum" min="1" max="99" placeholder="1">
+        </div>
+        <div class="field-group">
+          <div class="field-label">Duration (s)</div>
+          <input class="num-input" type="number" id="logDuration" min="0" max="9999" placeholder="0">
+        </div>
+        <div class="field-group">
+          <div class="field-label">Time of Set</div>
+          <input class="num-input" type="time" id="logTime" style="font-family:'Barlow',sans-serif;">
+        </div>
+      </div>
+      <div style="font-size:0.72rem;color:var(--muted);margin-bottom:14px;">
+        Leave <strong style="color:var(--text)">Time of Set</strong> blank to use current time, or enter a past time to backfill. &nbsp;·&nbsp; <strong style="color:var(--text)">Duration</strong> is auto-filled from the timer above but can be edited manually.
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-success" onclick="logSet()">✓ Log This Set</button>
+      </div>
+    </div>
+
+    <!-- Today's Sets -->
+    <div class="sets-list">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div class="sets-list-title">Today's Sets</div>
+        <button class="clear-day-btn" onclick="clearToday()">Clear Day</button>
+      </div>
+      <div id="setsContainer" style="max-height:440px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent;"></div>
+      <div style="font-size:0.7rem;color:var(--muted);text-align:right;margin-top:8px;" id="todaySetCount"></div>
+    </div>
+
+    <!-- Daily Goal -->
+    <div class="card" style="margin-top:24px;">
+      <div class="card-title">Daily Goal</div>
+      <div style="display:flex;align-items:center;gap:16px;">
+        <div class="field-group" style="flex:1;">
+          <div class="field-label">Rep Target</div>
+          <input class="num-input" type="number" id="dailyGoal" min="1" max="10000" value="100" onchange="saveSettings()">
+        </div>
+        <div style="text-align:center;min-width:64px;">
+          <div style="font-family:'Share Tech Mono',monospace;font-size:1.8rem;color:var(--green);line-height:1;" id="goalProgress">0%</div>
+          <div class="field-label" style="font-size:0.65rem;margin-top:4px;">Completion</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- HISTORY PANEL -->
+  <div id="panel-history" class="panel">
+    <div class="card" style="margin-bottom:24px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+        <div class="card-title" style="margin-bottom:0;" id="chartTitle">Weekly Overview</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <div style="display:flex;gap:4px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:3px;">
+            <button class="chart-type-btn" id="btnBar" onclick="setChartType('bar')" title="Bar chart">▬</button>
+            <button class="chart-type-btn active" id="btnLine" onclick="setChartType('line')" title="Line chart">╱</button>
+          </div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;">
+            <button class="chart-toggle active" onclick="setChartView('week')">Week</button>
+            <button class="chart-toggle" onclick="setChartView('mtd')">MTD</button>
+            <button class="chart-toggle" onclick="setChartView('ytd')">YTD</button>
+            <button class="chart-toggle" onclick="setChartView('custom')">Custom</button>
+          </div>
+        </div>
+      </div>
+      <div id="customRangeRow" style="display:none;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap;">
+        <div class="field-group" style="flex:1;min-width:120px;">
+          <div class="field-label">From</div>
+          <input class="num-input" type="date" id="customFrom" onchange="renderChart()" style="font-family:'Barlow',sans-serif;font-size:0.95rem;">
+        </div>
+        <div class="field-group" style="flex:1;min-width:120px;">
+          <div class="field-label">To</div>
+          <input class="num-input" type="date" id="customTo" onchange="renderChart()" style="font-family:'Barlow',sans-serif;font-size:0.95rem;">
+        </div>
+      </div>
+      <div id="weekChart" style="width:100%;"></div>
+      <div style="font-size:0.7rem;color:var(--muted);text-align:center;margin-top:6px;" id="chartSubLabel"></div>
+    </div>
+    <div class="stats-row" style="margin-bottom:24px;">
+      <div class="stat-card"><div class="val" id="hStatAvg">0</div><div class="lbl">Daily Avg</div></div>
+      <div class="stat-card"><div class="val" id="hStatBest">0</div><div class="lbl">Best Day</div></div>
+      <div class="stat-card"><div class="val" id="hStatTotal">0</div><div class="lbl">All Time</div></div>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div class="card-title" style="margin-bottom:0;">Session Log</div>
+        <button class="clear-day-btn" onclick="deleteAllSessions()" style="border-color:var(--border);color:var(--muted);">🗑 Delete All</button>
+      </div>
+      <div style="overflow-y:auto;max-height:477px;border-radius:8px;border:1px solid var(--border);scrollbar-width:thin;scrollbar-color:var(--border) transparent;">
+        <table class="history-table" style="margin-top:0;">
+          <thead style="position:sticky;top:0;background:var(--surface);z-index:1;">
+            <tr><th>Date</th><th>Set</th><th>Reps</th><th>Duration</th><th></th></tr>
+          </thead>
+          <tbody id="historyBody"><tr><td colspan="5"><div class="empty"><div class="emoji">📋</div>No history yet.</div></td></tr></tbody>
+        </table>
+      </div>
+      <div style="font-size:0.7rem;color:var(--muted);text-align:right;margin-top:8px;" id="sessionCount"></div>
+    </div>
+
+    <!-- Export / Import -->
+    <div class="card" style="margin-top:20px;">
+      <div class="card-title">Export &amp; Import Data</div>
+
+      <!-- Action buttons -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px;">
+        <button class="btn btn-secondary" onclick="exportCSV()" style="display:flex;align-items:center;justify-content:center;gap:7px;">
+          <span>⬇</span> Export
+        </button>
+        <label>
+          <div class="btn btn-secondary" style="display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;width:100%;">
+            <span>⬆</span> Import
+          </div>
+          <input type="file" id="importFile" accept=".csv" onchange="importCSV(event)" style="display:none;">
+        </label>
+        <button class="btn btn-secondary" onclick="downloadTemplate()" style="display:flex;align-items:center;justify-content:center;gap:7px;">
+          <span>📄</span> Template
+        </button>
+      </div>
+
+      <!-- Instructions -->
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+        <button onclick="toggleCsvGuide()" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:none;border:none;cursor:pointer;font-family:'Barlow',sans-serif;">
+          <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.15em;color:var(--accent2);">CSV Format Guide</div>
+          <span id="csvGuideChevron" style="color:var(--muted);font-size:0.8rem;transition:transform 0.25s;">▼</span>
+        </button>
+        <div id="csvGuideBody" style="display:none;padding:0 16px 16px;">
+        <div style="font-size:0.78rem;color:var(--text);margin-bottom:10px;line-height:1.6;">
+          The CSV must include a header row with these column names. <span style="color:var(--green);font-weight:600;">Required</span> columns must be present; <span style="color:var(--muted);font-weight:600;">Optional</span> columns can be omitted.
+        </div>
+
+        <table style="width:100%;border-collapse:collapse;font-size:0.75rem;margin-bottom:12px;">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border);">
+              <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.1em;font-size:0.65rem;">Column</th>
+              <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.1em;font-size:0.65rem;">Required</th>
+              <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.1em;font-size:0.65rem;">Format</th>
+              <th style="text-align:left;padding:6px 8px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.1em;font-size:0.65rem;">Example</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:7px 8px;font-family:'Share Tech Mono',monospace;color:var(--text);">date</td>
+              <td style="padding:7px 8px;"><span style="color:var(--green);font-weight:700;">✓ Yes</span></td>
+              <td style="padding:7px 8px;color:var(--muted);">YYYY-MM-DD</td>
+              <td style="padding:7px 8px;font-family:'Share Tech Mono',monospace;color:var(--muted);">2025-05-05</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:7px 8px;font-family:'Share Tech Mono',monospace;color:var(--text);">set_number</td>
+              <td style="padding:7px 8px;"><span style="color:var(--green);font-weight:700;">✓ Yes</span></td>
+              <td style="padding:7px 8px;color:var(--muted);">Integer</td>
+              <td style="padding:7px 8px;font-family:'Share Tech Mono',monospace;color:var(--muted);">1</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:7px 8px;font-family:'Share Tech Mono',monospace;color:var(--text);">reps</td>
+              <td style="padding:7px 8px;"><span style="color:var(--green);font-weight:700;">✓ Yes</span></td>
+              <td style="padding:7px 8px;color:var(--muted);">Integer ≥ 1</td>
+              <td style="padding:7px 8px;font-family:'Share Tech Mono',monospace;color:var(--muted);">20</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:7px 8px;font-family:'Share Tech Mono',monospace;color:var(--text);">duration_seconds</td>
+              <td style="padding:7px 8px;color:var(--muted);">Optional</td>
+              <td style="padding:7px 8px;color:var(--muted);">Integer</td>
+              <td style="padding:7px 8px;font-family:'Share Tech Mono',monospace;color:var(--muted);">45</td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:7px 8px;font-family:'Share Tech Mono',monospace;color:var(--text);">logged_time</td>
+              <td style="padding:7px 8px;color:var(--muted);">Optional</td>
+              <td style="padding:7px 8px;color:var(--muted);">HH:MM:SS or HH:MM AM/PM</td>
+              <td style="padding:7px 8px;font-family:'Share Tech Mono',monospace;color:var(--muted);">08:30:00</td>
+            </tr>
+            <tr>
+              <td style="padding:7px 8px;font-family:'Share Tech Mono',monospace;color:var(--text);">id</td>
+              <td style="padding:7px 8px;color:var(--muted);">Optional</td>
+              <td style="padding:7px 8px;color:var(--muted);">Unique string</td>
+              <td style="padding:7px 8px;font-family:'Share Tech Mono',monospace;color:var(--muted);">1714900800000</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div style="font-size:0.72rem;color:var(--muted);line-height:1.7;border-top:1px solid var(--border);padding-top:10px;">
+          <div style="margin-bottom:4px;">💡 <strong style="color:var(--text);">Import merges</strong> — existing records are never overwritten. Rows with matching <code style="background:var(--border);padding:1px 5px;border-radius:3px;font-family:'Share Tech Mono',monospace;">id</code> values are skipped as duplicates.</div>
+          <div style="margin-bottom:4px;">💡 <strong style="color:var(--text);">logged_time</strong> controls where the set appears in your daily timeline. If omitted, sets default to 12:00 PM.</div>
+          <div>💡 <strong style="color:var(--text);">Template</strong> button downloads a starter file with the correct headers and two example rows you can edit.</div>
+        </div>
+        </div>
+      </div>
+
+      <div id="importStatus" style="font-size:0.78rem;margin-top:12px;display:none;padding:10px 14px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);"></div>
+    </div>
+  </div>
+
+  <!-- REMINDER PANEL -->
+  <div id="panel-reminder" class="panel">
+    <div class="reminder-card">
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Pushup Reminders</div>
+          <div class="toggle-sub">Get prompted to do pushups throughout the day</div>
+        </div>
+        <button class="toggle" id="reminderToggle" onclick="toggleReminder()"></button>
+      </div>
+      <div class="interval-grid">
+        <div class="field-group">
+          <div class="field-label">Interval</div>
+          <select class="select-input" id="reminderInterval" onchange="updateReminder()">
+            <option value="15">Every 15 min</option>
+            <option value="30" selected>Every 30 min</option>
+            <option value="60">Every 1 hour</option>
+            <option value="90">Every 1.5 hours</option>
+            <option value="120">Every 2 hours</option>
+            <option value="180">Every 3 hours</option>
+            <option value="custom">Custom...</option>
+          </select>
+        </div>
+        <div class="field-group" id="customMinGroup" style="display:none;">
+          <div class="field-label">Minutes</div>
+          <input class="num-input" type="number" id="customMinutes" min="1" max="720" value="45" onchange="updateReminder()">
+        </div>
+        <div class="field-group">
+          <div class="field-label">Start Time</div>
+          <input class="num-input" type="time" id="reminderStart" value="07:00" onchange="updateReminder()" style="font-family:'Barlow',sans-serif;">
+        </div>
+        <div class="field-group">
+          <div class="field-label">End Time</div>
+          <input class="num-input" type="time" id="reminderEnd" value="21:00" onchange="updateReminder()" style="font-family:'Barlow',sans-serif;">
+        </div>
+      </div>
+      <div class="next-reminder">
+        <div class="icon">⏱️</div>
+        <div class="info">
+          <div class="time" id="nextReminderTime">—</div>
+          <div class="sub">Next reminder</div>
+        </div>
+        <div style="font-size:0.75rem;color:var(--muted);" id="reminderStatusText">OFF</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Celebration overlay -->
+<div id="celebrationOverlay" style="display:none;position:fixed;inset:0;z-index:2000;pointer-events:none;overflow:hidden;"></div>
+<div id="goalBanner" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.5);z-index:2001;background:linear-gradient(135deg,#ff4d00,#ffb700);border-radius:20px;padding:28px 40px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);pointer-events:none;transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1),opacity 0.4s;opacity:0;">
+  <div style="font-size:3rem;margin-bottom:8px;">🎉</div>
+  <div style="font-family:'Black Ops One',cursive;font-size:1.8rem;color:white;letter-spacing:0.05em;text-shadow:0 2px 8px rgba(0,0,0,0.3);">GOAL CRUSHED!</div>
+  <div style="font-family:'Share Tech Mono',monospace;font-size:1rem;color:rgba(255,255,255,0.85);margin-top:6px;" id="goalBannerSub"></div>
+</div>
+
+<div class="toast" id="toast" onclick="dismissToast()">
+  <div class="toast-icon">💪</div>
+  <div class="toast-text">
+    <div class="title">Time for pushups!</div>
+    <div class="sub" id="toastSub">Your interval reminder</div>
+  </div>
+  <div class="toast-close">✕</div>
+</div>
+
+<script>
+const STORAGE_KEY = 'pushup_tracker_v2';
+let state = {
+  sets: [],
+  settings: { dailyGoal: 100, reminderOn: false, reminderInterval: 30, reminderStart: '07:00', reminderEnd: '21:00' }
+};
+let timerInterval = null, timerSeconds = 0, timerRunning = false;
+let reminderTimeout = null, nextReminderAt = null, reminderTickInterval = null;
+let toastTimeout = null;
+
+function save() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {} }
+function load() {
+  try {
+    const d = localStorage.getItem(STORAGE_KEY);
+    if (d) { const p = JSON.parse(d); state.sets = p.sets || []; state.settings = {...state.settings, ...p.settings}; }
+  } catch(e) {}
+}
+function todayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function todaySets() { return state.sets.filter(s => s.date === todayKey()); }
+function todayTotal() { return todaySets().reduce((a,s) => a+s.reps, 0); }
+function weekTotal() {
+  const now = new Date(), start = new Date(now);
+  start.setDate(now.getDate() - now.getDay()); start.setHours(0,0,0,0);
+  return state.sets.filter(s => new Date(s.timestamp) >= start).reduce((a,s) => a+s.reps, 0);
+}
+function fmt(secs) { return `${Math.floor(secs/60).toString().padStart(2,'0')}:${(secs%60).toString().padStart(2,'0')}`; }
+
+function updateAll() {
+  const t = todayTotal();
+  document.getElementById('headerTotal').textContent = t;
+  document.getElementById('statToday').textContent = t;
+  document.getElementById('statSets').textContent = todaySets().length;
+  document.getElementById('statWeek').textContent = weekTotal();
+  renderSets();
+  updateGoalProgress();
+  if (document.getElementById('panel-history').classList.contains('active')) updateHistory();
+}
+
+function updateNextSetNum() {
+  const sets = todaySets();
+  const maxSetNum = sets.length ? Math.max(...sets.map(s => s.setNum)) : 0;
+  document.getElementById('logSetNum').value = maxSetNum + 1;
+}
+
+function renderSets() {
+  const sets = todaySets(), c = document.getElementById('setsContainer');
+  if (!sets.length) {
+    c.innerHTML = '<div class="empty"><div class="emoji">🏋️</div>No sets logged yet. Let\'s get moving!</div>';
+    document.getElementById('todaySetCount').textContent = '';
+  } else {
+    c.innerHTML = sets.map(s => `
+      <div class="set-row">
+        <span class="set-num">S${s.setNum}</span>
+        <div class="set-val">${s.reps}<small>reps</small></div>
+        <div class="set-val">${s.duration > 0 ? fmt(s.duration) : '—'}<small>time</small></div>
+        <div class="set-val">${new Date(s.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}<small>logged</small></div>
+        <button class="del-btn" onclick="deleteSet('${s.id}')">✕</button>
+      </div>`).join('');
+    document.getElementById('todaySetCount').textContent = `${sets.length} set${sets.length !== 1 ? 's' : ''} today`;
+  }
+  updateNextSetNum();
+}
+
+let goalAlreadyCelebrated = false;
+let pageJustLoaded = true;
+
+function updateGoalProgress() {
+  const goal = parseInt(document.getElementById('dailyGoal').value) || 100;
+  const total = todayTotal();
+  const pct = Math.round(total / goal * 100);
+  const el = document.getElementById('goalProgress');
+  el.textContent = pct + '%';
+  el.style.color = pct >= 100 ? 'var(--accent2)' : 'var(--green)';
+
+  if (pct >= 100 && !goalAlreadyCelebrated) {
+    goalAlreadyCelebrated = true;
+    if (!pageJustLoaded) celebrate(total, goal);
+  }
+  if (pct < 100) goalAlreadyCelebrated = false;
+}
+
+function playFanfare() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    // Triumphant ascending fanfare
+    const melody = [
+      [523.25, 0.00, 0.12], [523.25, 0.12, 0.12], [523.25, 0.24, 0.12],
+      [415.30, 0.36, 0.09], [622.25, 0.45, 0.36],
+      [493.88, 0.82, 0.12], [493.88, 0.94, 0.12], [493.88, 1.06, 0.12],
+      [369.99, 1.18, 0.09], [554.37, 1.27, 0.36],
+      [587.33, 1.64, 0.12], [622.25, 1.76, 0.12], [659.25, 1.88, 0.12],
+      [698.46, 2.00, 0.12], [739.99, 2.12, 0.12], [783.99, 2.24, 0.36],
+      [1046.50, 2.62, 0.60]
+    ];
+    melody.forEach(([freq, start, dur]) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+      const t = ctx.currentTime + start;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.3, t + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      osc.start(t); osc.stop(t + dur + 0.05);
+    });
+  } catch(e) {}
+}
+
+function celebrate(total, goal) {
+  playFanfare();
+
+  // Show banner
+  const banner = document.getElementById('goalBanner');
+  document.getElementById('goalBannerSub').textContent = `${total} reps — ${Math.round(total/goal*100)}% of your ${goal} rep goal`;
+  banner.style.display = 'block';
+  requestAnimationFrame(() => {
+    banner.style.opacity = '1';
+    banner.style.transform = 'translate(-50%,-50%) scale(1)';
+  });
+  setTimeout(() => {
+    banner.style.opacity = '0';
+    banner.style.transform = 'translate(-50%,-50%) scale(0.85)';
+    setTimeout(() => { banner.style.display = 'none'; banner.style.transform = 'translate(-50%,-50%) scale(0.5)'; }, 400);
+  }, 3200);
+
+  // Confetti burst
+  const overlay = document.getElementById('celebrationOverlay');
+  overlay.style.display = 'block';
+  overlay.innerHTML = '';
+  const colors = ['#ff4d00','#ffb700','#00e676','#ff6b6b','#4ecdc4','#ffe66d','#a29bfe','#fd79a8'];
+  for (let i = 0; i < 90; i++) {
+    const piece = document.createElement('div');
+    const size = 6 + Math.random() * 10;
+    const isRect = Math.random() > 0.5;
+    piece.style.cssText = `
+      position:absolute;
+      width:${size}px; height:${isRect ? size * 0.4 : size}px;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      border-radius:${isRect ? '2px' : '50%'};
+      left:${Math.random()*100}%;
+      top:-20px;
+      opacity:1;
+      transform:rotate(${Math.random()*360}deg);
+      animation: confettiFall ${1.8 + Math.random()*2}s ease-in ${Math.random()*0.8}s forwards;
+    `;
+    overlay.appendChild(piece);
+  }
+  setTimeout(() => { overlay.style.display = 'none'; overlay.innerHTML = ''; }, 4000);
+}
+
+let chartView = 'week'; // 'week' | 'mtd' | 'ytd' | 'custom'
+let chartType = 'line';  // 'bar' | 'line'
+
+function setChartType(type) {
+  chartType = type;
+  document.getElementById('btnBar').classList.toggle('active', type === 'bar');
+  document.getElementById('btnLine').classList.toggle('active', type === 'line');
+  renderChart();
+}
+
+function setChartView(view) {
+  chartView = view;
+  document.querySelectorAll('.chart-toggle').forEach((btn, i) => {
+    btn.classList.toggle('active', ['week','mtd','ytd','custom'][i] === view);
+  });
+  const customRow = document.getElementById('customRangeRow');
+  if (view === 'custom') {
+    customRow.style.display = 'flex';
+    // Default custom range to last 30 days if not set
+    if (!document.getElementById('customFrom').value) {
+      const from = new Date(); from.setDate(from.getDate() - 29);
+      document.getElementById('customFrom').value = from.toISOString().split('T')[0];
+      document.getElementById('customTo').value = new Date().toISOString().split('T')[0];
+    }
+  } else {
+    customRow.style.display = 'none';
+  }
+  renderChart();
+}
+
+function getChartDays() {
+  const now = new Date();
+  const toKey = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  if (chartView === 'week') {
+    // Sun–Sat of current week
+    return Array.from({length: 7}, (_, i) => {
+      const d = new Date(now); d.setDate(now.getDate() - now.getDay() + i);
+      return toKey(d);
+    });
+  }
+  if (chartView === 'mtd') {
+    const days = [];
+    for (let d = 1; d <= now.getDate(); d++) {
+      const dt = new Date(now.getFullYear(), now.getMonth(), d);
+      days.push(toKey(dt));
+    }
+    return days;
+  }
+  if (chartView === 'ytd') {
+    const days = [];
+    const start = new Date(now.getFullYear(), 0, 1);
+    for (let dt = new Date(start); dt <= now; dt.setDate(dt.getDate() + 1)) {
+      days.push(toKey(new Date(dt)));
+    }
+    return days;
+  }
+  if (chartView === 'custom') {
+    const from = document.getElementById('customFrom').value;
+    const to = document.getElementById('customTo').value;
+    if (!from || !to) return [];
+    const days = [];
+    for (let dt = new Date(from + 'T00:00:00'); toKey(dt) <= to; dt.setDate(dt.getDate() + 1)) {
+      days.push(toKey(new Date(dt)));
+    }
+    return days;
+  }
+  return [];
+}
+
+function renderChart() {
+  const todayStr = todayKey();
+  const days = getChartDays();
+  const container = document.getElementById('weekChart');
+  if (!days.length) { container.innerHTML = '<div class="empty" style="width:100%;padding:40px 0;">Select a date range</div>'; return; }
+
+  const data = days.map(key => ({
+    key,
+    total: state.sets.filter(s => s.date === key).reduce((a,s) => a+s.reps, 0),
+    isToday: key === todayStr
+  }));
+
+  const titles = { week: 'Weekly Overview', mtd: 'Month to Date', ytd: 'Year to Date', custom: 'Custom Range' };
+  document.getElementById('chartTitle').textContent = titles[chartView];
+
+  const forceMonthly = chartView === 'ytd';
+  const useGroupedWeekly = !forceMonthly && days.length > 31 && days.length <= 90;
+  const useGroupedMonthly = forceMonthly || days.length > 90;
+
+  // Build display buckets
+  let buckets = [];
+  if (useGroupedMonthly) {
+    const months = {};
+    data.forEach(d => {
+      const dt = new Date(d.key + 'T00:00:00');
+      const mKey = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`;
+      if (!months[mKey]) months[mKey] = { label: dt.toLocaleDateString([], {month:'short', year:'2-digit'}), total: 0, hasToday: false };
+      months[mKey].total += d.total;
+      if (d.isToday) months[mKey].hasToday = true;
+    });
+    buckets = Object.values(months);
+    document.getElementById('chartSubLabel').textContent = `${buckets.length} months · ${data.reduce((a,d)=>a+d.total,0).toLocaleString()} total reps`;
+  } else if (useGroupedWeekly) {
+    const weeks = {};
+    data.forEach(d => {
+      const dt = new Date(d.key + 'T00:00:00');
+      const wStart = new Date(dt); wStart.setDate(dt.getDate() - dt.getDay());
+      const wKey = `${wStart.getFullYear()}-${String(wStart.getMonth()+1).padStart(2,'0')}-${String(wStart.getDate()).padStart(2,'0')}`;
+      if (!weeks[wKey]) weeks[wKey] = { label: wStart.toLocaleDateString([], {month:'short', day:'numeric'}), total: 0, hasToday: false };
+      weeks[wKey].total += d.total;
+      if (d.isToday) weeks[wKey].hasToday = true;
+    });
+    buckets = Object.values(weeks);
+    document.getElementById('chartSubLabel').textContent = `${buckets.length} weeks · ${data.reduce((a,d)=>a+d.total,0).toLocaleString()} total reps`;
+  } else {
+    const showMonthLabel = days.length > 7;
+    buckets = data.map(d => {
+      const dt = new Date(d.key + 'T00:00:00');
+      const label = showMonthLabel
+        ? (dt.getDate() === 1 ? dt.toLocaleDateString([], {month:'short'}) : String(dt.getDate()))
+        : ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][dt.getDay()];
+      return { label, total: d.total, hasToday: d.isToday };
+    });
+    document.getElementById('chartSubLabel').textContent = `${days.length} days · ${data.reduce((a,d)=>a+d.total,0).toLocaleString()} total reps`;
+  }
+
+  if (chartType === 'bar') {
+    renderBarChart(buckets, container);
+  } else {
+    renderLineChart(buckets, container);
+  }
+}
+
+function renderBarChart(buckets, container) {
+  const max = Math.max(...buckets.map(b => b.total), 1);
+  const isLarge = buckets.length > 14;
+  container.style.height = '150px';
+  container.innerHTML = `<div class="week-bar-chart" style="height:120px;">` +
+    buckets.map(b => `
+      <div class="bar-col">
+        <div class="bar-count" style="font-size:${isLarge?'0.55rem':'0.7rem'};">${b.total||''}</div>
+        <div class="bar${b.hasToday?' today':''}" style="height:${Math.round(b.total/max*100)}%;"></div>
+        <div class="bar-label" style="font-size:${isLarge?'0.5rem':'0.65rem'};${isLarge?'writing-mode:vertical-rl;transform:rotate(180deg);height:32px;':''}">${b.label}</div>
+      </div>`).join('') + `</div>`;
+}
+
+function renderLineChart(buckets, container) {
+  const max = Math.max(...buckets.map(b => b.total), 1);
+  const W = 600, H = 140, padL = 36, padR = 12, padT = 18, padB = 36;
+  const chartW = W - padL - padR;
+  const chartH = H - padT - padB;
+  const n = buckets.length;
+  const xs = buckets.map((_, i) => padL + (n === 1 ? chartW / 2 : i * chartW / (n - 1)));
+  const ys = buckets.map(b => padT + chartH - (b.total / max) * chartH);
+
+  // Y axis gridlines
+  const gridLines = [0, 0.25, 0.5, 0.75, 1].map(f => {
+    const y = padT + chartH * (1 - f);
+    const val = Math.round(max * f);
+    return `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="var(--border)" stroke-width="1"/>
+            <text x="${padL - 4}" y="${y + 4}" text-anchor="end" font-size="8" fill="var(--muted)">${val}</text>`;
+  }).join('');
+
+  // Area fill
+  const areaPoints = [`${xs[0]},${padT + chartH}`, ...xs.map((x,i) => `${x},${ys[i]}`), `${xs[n-1]},${padT + chartH}`].join(' ');
+
+  // Line path
+  const linePath = xs.map((x, i) => `${i === 0 ? 'M' : 'L'}${x},${ys[i]}`).join(' ');
+
+  // Data points and labels
+  const maxCount = n > 20 ? 10 : n;
+  const step = Math.ceil(n / maxCount);
+  const points = buckets.map((b, i) => {
+    const x = xs[i], y = ys[i];
+    const isToday = b.hasToday;
+    const showLabel = n <= 20 || i % step === 0 || i === n - 1;
+    const labelFontSize = n > 14 ? 7 : 9;
+    return `
+      <circle cx="${x}" cy="${y}" r="${isToday ? 5 : 3.5}" fill="${isToday ? 'var(--green)' : 'var(--accent)'}" stroke="var(--surface)" stroke-width="1.5"/>
+      ${b.total > 0 ? `<text x="${x}" y="${y - 8}" text-anchor="middle" font-size="8" fill="var(--text)" font-family="Share Tech Mono,monospace">${b.total}</text>` : ''}
+      ${showLabel ? `<text x="${x}" y="${H - 4}" text-anchor="middle" font-size="${labelFontSize}" fill="var(--muted)">${b.label}</text>` : ''}
+    `;
+  }).join('');
+
+  container.style.height = 'auto';
+  container.innerHTML = `
+    <svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;overflow:visible;">
+      <defs>
+        <linearGradient id="lineAreaGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.25"/>
+          <stop offset="100%" stop-color="var(--accent)" stop-opacity="0.02"/>
+        </linearGradient>
+      </defs>
+      ${gridLines}
+      <polygon points="${areaPoints}" fill="url(#lineAreaGrad)"/>
+      <path d="${linePath}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+      ${points}
+    </svg>`;
+}
+
+function updateHistory() {
+  renderChart();
+  const allDays = [...new Set(state.sets.map(s=>s.date))];
+  const totals = allDays.map(d => state.sets.filter(s=>s.date===d).reduce((a,s)=>a+s.reps,0));
+  document.getElementById('hStatAvg').textContent = totals.length ? Math.round(totals.reduce((a,b)=>a+b,0)/totals.length) : 0;
+  document.getElementById('hStatBest').textContent = totals.length ? Math.max(...totals) : 0;
+  document.getElementById('hStatTotal').textContent = state.sets.reduce((a,s)=>a+s.reps,0);
+  const tbody = document.getElementById('historyBody');
+  if (!state.sets.length) { tbody.innerHTML = '<tr><td colspan="5"><div class="empty"><div class="emoji">📋</div>No history yet.</div></td></tr>'; document.getElementById('sessionCount').textContent = ''; return; }
+  const sorted = [...state.sets].sort((a,b)=>b.timestamp-a.timestamp);
+  tbody.innerHTML = sorted.map(s => `
+    <tr>
+      <td>${s.date}</td>
+      <td><span class="badge badge-orange">Set ${s.setNum}</span></td>
+      <td><span class="badge badge-green">${s.reps}</span></td>
+      <td>${s.duration>0?fmt(s.duration):'—'}</td>
+      <td><button class="del-btn" onclick="deleteSet('${s.id}')">✕</button></td>
+    </tr>`).join('');
+  document.getElementById('sessionCount').textContent = `${sorted.length} session${sorted.length !== 1 ? 's' : ''} total`;
+}
+
+function toggleTimer() {
+  if (timerRunning) {
+    clearInterval(timerInterval); timerRunning = false;
+    document.getElementById('timerBtn').textContent = '▶ Resume';
+    document.getElementById('timerDisplay').classList.remove('running');
+    document.getElementById('timerStatus').textContent = 'Paused — ' + fmt(timerSeconds);
+    document.getElementById('logDuration').value = timerSeconds;
+  } else {
+    timerRunning = true;
+    document.getElementById('timerBtn').textContent = '⏸ Pause';
+    document.getElementById('timerDisplay').classList.add('running');
+    document.getElementById('timerStatus').textContent = 'Running…';
+    timerInterval = setInterval(() => {
+      timerSeconds++;
+      document.getElementById('timerDisplay').textContent = fmt(timerSeconds);
+      document.getElementById('logDuration').value = timerSeconds;
+    }, 1000);
+  }
+}
+
+function resetTimer() {
+  clearInterval(timerInterval); timerRunning = false; timerSeconds = 0;
+  document.getElementById('timerDisplay').textContent = '00:00';
+  document.getElementById('timerDisplay').classList.remove('running');
+  document.getElementById('timerBtn').textContent = '▶ Start';
+  document.getElementById('timerStatus').textContent = 'Ready';
+  document.getElementById('logDuration').value = '';
+}
+
+function logSet() {
+  const reps = parseInt(document.getElementById('logReps').value);
+  if (!reps || reps < 1) { showToast('⚠️','Enter a rep count','Set the number of reps first', false); return; }
+  const setNum = parseInt(document.getElementById('logSetNum').value) || (todaySets().length+1);
+  const duration = parseInt(document.getElementById('logDuration').value) || 0;
+
+  // Build timestamp — use entered time if provided, else now
+  const timeVal = document.getElementById('logTime').value;
+  let timestamp = Date.now();
+  if (timeVal) {
+    const [h, m] = timeVal.split(':').map(Number);
+    const d = new Date(); d.setHours(h, m, 0, 0);
+    timestamp = d.getTime();
+  }
+
+  state.sets.push({ id: Date.now().toString(), date: todayKey(), setNum, reps, duration, timestamp });
+  // Re-sort today's sets by timestamp after adding
+  state.sets.sort((a, b) => a.timestamp - b.timestamp);
+  save(); updateAll();
+  document.getElementById('logReps').value = '';
+  document.getElementById('logTime').value = '';
+  resetTimer();
+  showToast('💪', `Set ${setNum} logged!`, `${reps} reps added — keep going!`, false);
+}
+
+function deleteSet(id) {
+  const set = state.sets.find(s => s.id === id);
+  if (!set) return;
+  if (!confirm(`Remove Set ${set.setNum} (${set.reps} reps)?`)) return;
+  state.sets = state.sets.filter(s => s.id !== id);
+  save(); updateAll();
+}
+function clearToday() {
+  if (!confirm('Clear all sets for today?')) return;
+  state.sets = state.sets.filter(s=>s.date!==todayKey()); save(); updateAll();
+}
+
+function playChime() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const notes = [523.25, 659.25, 783.99, 1046.50]; // C5 E5 G5 C6
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      const start = ctx.currentTime + i * 0.18;
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(0.35, start + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.5);
+      osc.start(start); osc.stop(start + 0.55);
+    });
+  } catch(e) {}
+}
+
+function showToast(icon, title, sub, isReminder = false) {
+  const el = document.getElementById('toast');
+  el.querySelector('.toast-icon').textContent = icon;
+  el.querySelector('.title').textContent = title;
+  document.getElementById('toastSub').textContent = sub;
+  el.classList.toggle('reminder-toast', isReminder);
+  el.classList.add('show');
+  clearTimeout(toastTimeout);
+  // Reminder toasts stay until clicked; others auto-dismiss after 3.5s
+  if (!isReminder) {
+    toastTimeout = setTimeout(() => el.classList.remove('show'), 3500);
+  }
+}
+
+function dismissToast() {
+  clearTimeout(toastTimeout);
+  document.getElementById('toast').classList.remove('show');
+}
+
+function toggleReminder() {
+  state.settings.reminderOn = !state.settings.reminderOn;
+  document.getElementById('reminderToggle').classList.toggle('on', state.settings.reminderOn);
+  save();
+  if (state.settings.reminderOn) scheduleNextReminder();
+  else { clearTimeout(reminderTimeout); clearInterval(reminderTickInterval); nextReminderAt = null; updateReminderUI(); }
+}
+
+function updateReminder() {
+  const val = document.getElementById('reminderInterval').value;
+  document.getElementById('customMinGroup').style.display = val==='custom'?'flex':'none';
+  state.settings.reminderInterval = val==='custom' ? parseInt(document.getElementById('customMinutes').value)||30 : parseInt(val);
+  state.settings.reminderStart = document.getElementById('reminderStart').value;
+  state.settings.reminderEnd = document.getElementById('reminderEnd').value;
+  save();
+  if (state.settings.reminderOn) { clearTimeout(reminderTimeout); clearInterval(reminderTickInterval); scheduleNextReminder(); }
+}
+
+function scheduleNextReminder() {
+  clearTimeout(reminderTimeout); clearInterval(reminderTickInterval);
+  const now = new Date();
+  const [sh,sm] = state.settings.reminderStart.split(':').map(Number);
+  const [eh,em] = state.settings.reminderEnd.split(':').map(Number);
+  const nowMins = now.getHours()*60+now.getMinutes();
+  const startMins = sh*60+sm, endMins = eh*60+em;
+  if (nowMins<startMins || nowMins>=endMins) {
+    const target = new Date(now);
+    if (nowMins>=endMins) target.setDate(target.getDate()+1);
+    target.setHours(sh,sm,0,0); nextReminderAt = target;
+  } else {
+    nextReminderAt = new Date(now.getTime() + state.settings.reminderInterval*60*1000);
+  }
+  reminderTimeout = setTimeout(() => { fireReminder(); if(state.settings.reminderOn) scheduleNextReminder(); }, nextReminderAt.getTime()-Date.now());
+  reminderTickInterval = setInterval(updateReminderUI, 1000);
+  updateReminderUI();
+}
+
+function fireReminder() {
+  playChime();
+  showToast('💪','Time for pushups!',`${state.settings.reminderInterval} min reminder — tap to dismiss`, true);
+  if (Notification.permission==='granted') new Notification('PUSHUP TIME! 💪',{body:`${state.settings.reminderInterval} min reminder — get those reps in!`});
+  else if (Notification.permission!=='denied') Notification.requestPermission();
+}
+
+function updateReminderUI() {
+  const on = state.settings.reminderOn;
+  const st = document.getElementById('reminderStatusText');
+  st.textContent = on?'ON':'OFF'; st.style.color = on?'var(--green)':'var(--muted)';
+  if (nextReminderAt && on) {
+    const diff = Math.max(0, nextReminderAt.getTime()-Date.now());
+    document.getElementById('nextReminderTime').textContent = `${Math.floor(diff/60000)}:${Math.floor((diff%60000)/1000).toString().padStart(2,'0')} — ${nextReminderAt.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}`;
+  } else { document.getElementById('nextReminderTime').textContent = on?'Calculating…':'—'; }
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active',['workout','history','reminder'][i]===name));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  if (name==='history') updateHistory();
+}
+
+function saveSettings() { state.settings.dailyGoal = parseInt(document.getElementById('dailyGoal').value)||100; save(); updateGoalProgress(); }
+
+function loadSettings() {
+  document.getElementById('dailyGoal').value = state.settings.dailyGoal;
+  document.getElementById('reminderToggle').classList.toggle('on', state.settings.reminderOn);
+  document.getElementById('reminderStart').value = state.settings.reminderStart;
+  document.getElementById('reminderEnd').value = state.settings.reminderEnd;
+  const iv = state.settings.reminderInterval;
+  if (['15','30','60','90','120','180'].includes(String(iv))) document.getElementById('reminderInterval').value = String(iv);
+  else { document.getElementById('reminderInterval').value='custom'; document.getElementById('customMinGroup').style.display='flex'; document.getElementById('customMinutes').value=iv; }
+  if (state.settings.reminderOn) scheduleNextReminder(); else updateReminderUI();
+}
+
+// ─── EXPORT / IMPORT ─────────────────────────────────────────────────────────
+function deleteAllSessions() {
+  if (!state.sets.length) { showToast('⚠️', 'Nothing to delete', 'No sessions logged yet.', false); return; }
+  const count = state.sets.length;
+  if (!confirm(`Permanently delete all ${count} logged set${count !== 1 ? 's' : ''}? This cannot be undone.`)) return;
+  state.sets = [];
+  save(); updateAll();
+  showToast('🗑', 'All sessions deleted', 'Your history has been cleared.', false);
+}
+
+function downloadTemplate() {
+  const today = new Date().toISOString().split('T')[0];
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+  const csv = [
+    'id,date,set_number,reps,duration_seconds,logged_time',
+    `template_001,${yesterday},1,20,45,07:30:00`,
+    `template_002,${yesterday},2,15,38,07:45:00`,
+    `template_003,${today},1,25,52,08:00:00`,
+  ].join('\n');
+  const blob = new Blob([csv], {type: 'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'pushup_import_template.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('📄', 'Template downloaded!', 'Edit the example rows and import.', false);
+}
+
+function exportCSV() {
+  if (!state.sets.length) { showToast('⚠️', 'Nothing to export', 'Log some sets first!', false); return; }
+  const header = 'id,date,set_number,reps,duration_seconds,logged_time';
+  const rows = [...state.sets]
+    .sort((a,b) => a.timestamp - b.timestamp)
+    .map(s => [
+      s.id,
+      s.date,
+      s.setNum,
+      s.reps,
+      s.duration || 0,
+      new Date(s.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'})
+    ].join(','));
+  const csv = [header, ...rows].join('\n');
+  const blob = new Blob([csv], {type: 'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `pushups_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('📥', 'Export complete!', `${state.sets.length} sets saved to CSV`, false);
+}
+
+function importCSV(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const lines = e.target.result.trim().split('\n');
+    const statusEl = document.getElementById('importStatus');
+    if (lines.length < 2) {
+      statusEl.style.display = 'block';
+      statusEl.style.color = 'var(--accent)';
+      statusEl.textContent = '⚠ File appears empty or invalid.';
+      return;
+    }
+    const header = lines[0].toLowerCase().split(',').map(h => h.trim());
+    const idxId = header.indexOf('id');
+    const idxDate = header.indexOf('date');
+    const idxSet = header.indexOf('set_number');
+    const idxReps = header.indexOf('reps');
+    const idxDur = header.indexOf('duration_seconds');
+    const idxTime = header.indexOf('logged_time');
+    if (idxDate < 0 || idxSet < 0 || idxReps < 0) {
+      statusEl.style.display = 'block';
+      statusEl.style.color = 'var(--accent)';
+      statusEl.textContent = '⚠ Missing required columns: date, set_number, reps.';
+      return;
+    }
+    const existingIds = new Set(state.sets.map(s => s.id));
+    let added = 0, skipped = 0;
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split(',').map(c => c.trim());
+      if (cols.length < 3) continue;
+      const id = idxId >= 0 ? cols[idxId] : `import_${Date.now()}_${i}`;
+      if (existingIds.has(id)) { skipped++; continue; }
+      const reps = parseInt(cols[idxReps]);
+      if (!reps || reps < 1) { skipped++; continue; }
+      const date = cols[idxDate];
+      const setNum = parseInt(cols[idxSet]) || 1;
+      const duration = idxDur >= 0 ? parseInt(cols[idxDur]) || 0 : 0;
+      // Use logged_time if present, otherwise fall back to noon
+      let ts;
+      if (idxTime >= 0 && cols[idxTime]) {
+        ts = new Date(`${date} ${cols[idxTime]}`).getTime();
+        if (isNaN(ts)) ts = new Date(date + 'T12:00:00').getTime() + i;
+      } else {
+        ts = new Date(date + 'T12:00:00').getTime() + i;
+      }
+      state.sets.push({ id, date, setNum, reps, duration, timestamp: ts });
+      existingIds.add(id);
+      added++;
+    }
+    state.sets.sort((a,b) => a.timestamp - b.timestamp);
+    save(); updateAll();
+    statusEl.style.display = 'block';
+    statusEl.style.color = added > 0 ? 'var(--green)' : 'var(--muted)';
+    statusEl.textContent = `✓ Imported ${added} set${added !== 1 ? 's' : ''}, skipped ${skipped} duplicate${skipped !== 1 ? 's' : ''}.`;
+    showToast('📤', 'Import complete!', `${added} sets added`, false);
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function toggleCsvGuide() {
+  const body = document.getElementById('csvGuideBody');
+  const chevron = document.getElementById('csvGuideChevron');
+  const open = body.style.display === 'none';
+  body.style.display = open ? 'block' : 'none';
+  chevron.style.transform = open ? 'rotate(180deg)' : '';
+}
+
+function init() {
+  load(); loadSettings();
+  document.getElementById('dateDisplay').textContent = new Date().toLocaleDateString(undefined,{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  if ('Notification' in window && Notification.permission==='default') Notification.requestPermission();
+  updateAll();
+  pageJustLoaded = false;
+}
+
+init();
+</script>
+</body>
+</html>
